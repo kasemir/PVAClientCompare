@@ -17,7 +17,8 @@ import org.epics.pva.client.PVAClient;
 
 /** PVA 'get'
  *  @author Kay Kasemir
- */@SuppressWarnings("nls")
+ */
+@SuppressWarnings("nls")
 public class NewGet
 {
     private static AtomicInteger new_updates = new AtomicInteger();

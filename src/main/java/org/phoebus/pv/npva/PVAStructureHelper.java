@@ -7,15 +7,19 @@
  ******************************************************************************/
 package org.phoebus.pv.npva;
 
+import java.util.List;
+
+import org.epics.pva.data.PVAByte;
 import org.epics.pva.data.PVAData;
 import org.epics.pva.data.PVADouble;
+import org.epics.pva.data.PVAFloat;
+import org.epics.pva.data.PVAInt;
+import org.epics.pva.data.PVALong;
 import org.epics.pva.data.PVANumber;
+import org.epics.pva.data.PVAShort;
+import org.epics.pva.data.PVAString;
+import org.epics.pva.data.PVAStringArray;
 import org.epics.pva.data.PVAStructure;
-import org.epics.vtype.Alarm;
-import org.epics.vtype.AlarmSeverity;
-import org.epics.vtype.AlarmStatus;
-import org.epics.vtype.Time;
-import org.epics.vtype.VString;
 import org.epics.vtype.VType;
 
 @SuppressWarnings("nls")
@@ -28,9 +32,9 @@ public class PVAStructureHelper
         if (type.startsWith("epics:nt/"))
             type = type.substring(9);
         if (type.equals("NTScalar:1.0"))
-            return decodeNTScalar(struct);
-//        if (type.equals("NTEnum:1.0"))
-//            return Decoders.decodeEnum(data);
+            return decodeScalar(struct);
+        if (type.equals("NTEnum:1.0"))
+            return Decoders.decodeEnum(struct);
 //        if (type.equals("NTScalarArray:1.0"))
 //            return decodeNTArray(data);
 //        if (type.equals("NTNDArray:1.0"))
@@ -42,18 +46,31 @@ public class PVAStructureHelper
         return null;
     }
 
-    private static VType decodeNTScalar(final PVAStructure struct) throws Exception
+    /** Attempt to decode a scalar {@link VType}
+     *  @param struct PVA data for a scalar
+     *  @return Value
+     *  @throws Exception on error decoding the scalar
+     */
+    private static VType decodeScalar(final PVAStructure struct) throws Exception
     {
         final PVAData field = struct.get("value");
         if (field == null)
             throw new Exception("Expected struct with scalar 'value', got " + struct);
         if (field instanceof PVADouble)
             return Decoders.decodeDouble(struct, (PVADouble) field);
-        // TODO Auto-generated method stub
-
-        return VString.of(struct.format(),
-                Alarm.of(AlarmSeverity.UNDEFINED, AlarmStatus.CLIENT, "Unknown scalar type"),
-                Time.now());
+        if (field instanceof PVAFloat)
+            return Decoders.decodeFloat(struct, (PVAFloat) field);
+        if (field instanceof PVALong)
+            return Decoders.decodeLong(struct, (PVALong) field);
+        if (field instanceof PVAInt)
+            return Decoders.decodeInt(struct, (PVAInt) field);
+        if (field instanceof PVAShort)
+            return Decoders.decodeShort(struct, (PVAShort) field);
+        if (field instanceof PVAByte)
+            return Decoders.decodeByte(struct, (PVAByte) field);
+        if (field instanceof PVAString)
+            return Decoders.decodeString(struct, (PVAString) field);
+        throw new Exception("Cannot handle " + field.getClass().getName());
     }
 
     public static double getDoubleValue(final PVAStructure struct, String name,
@@ -64,5 +81,16 @@ public class PVAStructureHelper
             return field.getNumber().doubleValue();
         else
             return default_value;
+    }
+
+    /** @param structure {@link PVAStructure} from which to read
+     *  @param name Name of a field in that structure
+     *  @return Array of strings
+     *  @throws Exception on error
+     */
+    public static List<String> getStrings(final PVAStructure structure, final String name)
+    {
+        final PVAStringArray choices = structure.get(name);
+        return List.of(choices.get());
     }
 }

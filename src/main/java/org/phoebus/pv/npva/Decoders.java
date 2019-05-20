@@ -11,12 +11,16 @@ import java.text.FieldPosition;
 import java.text.NumberFormat;
 import java.text.ParsePosition;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.epics.pva.data.PVAByte;
 import org.epics.pva.data.PVADouble;
+import org.epics.pva.data.PVAFloat;
 import org.epics.pva.data.PVAInt;
 import org.epics.pva.data.PVALong;
+import org.epics.pva.data.PVAShort;
 import org.epics.pva.data.PVAString;
 import org.epics.pva.data.PVAStructure;
 import org.epics.util.stats.Range;
@@ -25,9 +29,21 @@ import org.epics.vtype.Alarm;
 import org.epics.vtype.AlarmSeverity;
 import org.epics.vtype.AlarmStatus;
 import org.epics.vtype.Display;
+import org.epics.vtype.EnumDisplay;
 import org.epics.vtype.Time;
+import org.epics.vtype.VByte;
 import org.epics.vtype.VDouble;
+import org.epics.vtype.VEnum;
+import org.epics.vtype.VFloat;
+import org.epics.vtype.VInt;
+import org.epics.vtype.VLong;
+import org.epics.vtype.VShort;
+import org.epics.vtype.VString;
 import org.epics.vtype.VType;
+import org.epics.vtype.VUByte;
+import org.epics.vtype.VUInt;
+import org.epics.vtype.VULong;
+import org.epics.vtype.VUShort;
 
 /** Decodes {@link Time}, {@link Alarm}, {@link Display}, ...
  *  @author Kay Kasemir
@@ -43,15 +59,6 @@ public class Decoders
     /** Cache for formats */
     private static final Map<String, NumberFormat> formatterCache =
             new ConcurrentHashMap<>();
-
-
-    public static VType decodeDouble(final PVAStructure struct, final PVADouble field)
-    {
-        return VDouble.of(field.get(),
-                          decodeAlarm(struct),
-                          decodeTime(struct),
-                          decodeDisplay(struct));
-    }
 
     private static Alarm decodeAlarm(final PVAStructure struct)
     {
@@ -258,5 +265,60 @@ public class Decoders
             alarm = warn = Range.undefined();
 
         return Display.of(display, alarm, warn, control, units, format);
+    }
+
+    public static VType decodeString(PVAStructure struct, PVAString field)
+    {
+        return VString.of(field.get(), decodeAlarm(struct), decodeTime(struct));
+    }
+
+    public static VEnum decodeEnum(final PVAStructure struct) throws Exception
+    {
+        final Alarm alarm = decodeAlarm(struct);
+        final Time time = decodeTime(struct);
+
+        final PVAStructure section = struct.get("value");
+        final int value = ((PVAInt)section.get("index")).get();
+        final List<String> labels = PVAStructureHelper.getStrings(section, "choices");
+
+        return VEnum.of(value, EnumDisplay.of(labels), alarm, time);
+    }
+
+    public static VType decodeDouble(final PVAStructure struct, final PVADouble field)
+    {
+        return VDouble.of(field.get(), decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+    }
+
+    public static VType decodeFloat(final PVAStructure struct, final PVAFloat field)
+    {
+        return VFloat.of(field.get(), decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+    }
+
+    public static VType decodeLong(final PVAStructure struct, final PVALong field)
+    {
+        if (field.isUnsigned())
+            return VULong.of(field.get(), decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+        return VLong.of(field.get(), decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+    }
+
+    public static VType decodeInt(final PVAStructure struct, final PVAInt field)
+    {
+        if (field.isUnsigned())
+            return VUInt.of(field.get(), decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+        return VInt.of(field.get(), decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+    }
+
+    public static VType decodeShort(final PVAStructure struct, final PVAShort field)
+    {
+        if (field.isUnsigned())
+            return VUShort.of(field.get(), decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+        return VShort.of(field.get(), decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+    }
+
+    public static VType decodeByte(final PVAStructure struct, final PVAByte field)
+    {
+        if (field.isUnsigned())
+            return VUByte.of(field.get(), decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+        return VByte.of(field.get(), decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
     }
 }
