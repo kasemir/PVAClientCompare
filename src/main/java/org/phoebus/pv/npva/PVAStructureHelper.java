@@ -7,8 +7,10 @@
  ******************************************************************************/
 package org.phoebus.pv.npva;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.epics.pva.data.PVAArray;
 import org.epics.pva.data.PVAByteArray;
 import org.epics.pva.data.PVAData;
 import org.epics.pva.data.PVADoubleArray;
@@ -20,11 +22,16 @@ import org.epics.pva.data.PVAShortArray;
 import org.epics.pva.data.PVAString;
 import org.epics.pva.data.PVAStringArray;
 import org.epics.pva.data.PVAStructure;
+import org.epics.util.array.ArrayDouble;
+import org.epics.util.array.ArrayFloat;
+import org.epics.util.array.ArrayInteger;
+import org.epics.util.array.ArrayUInteger;
 import org.epics.vtype.Alarm;
 import org.epics.vtype.AlarmSeverity;
 import org.epics.vtype.AlarmStatus;
 import org.epics.vtype.Time;
 import org.epics.vtype.VString;
+import org.epics.vtype.VTable;
 import org.epics.vtype.VType;
 
 @SuppressWarnings("nls")
@@ -56,13 +63,22 @@ public class PVAStructureHelper
             return decodeNTArray(actual);
         if (type.equals("NTNDArray:1.0"))
             return ImageDecoder.decode(actual);
-//        if (type.equals("NTTable:1.0"))
-//            return decodeNTTable(data);
+        if (type.equals("NTTable:1.0"))
+            return decodeNTTable(actual);
 
-        // TODO Auto-generated method stub
+        // Handle data that contains a "value", even though not marked as NT*
+        final PVAData field = actual.get("value");
+        if (field instanceof PVANumber  ||
+            field instanceof PVAString)
+            return decodeScalar(actual);
+        else if (field instanceof PVAArray)
+            return decodeNTArray(actual);
+        // TODO: not really sure how to handle arbitrary structures -- no solid use cases yet...
+
+        // Create string that indicates name of unknown type
         return VString.of(actual.format(),
-                Alarm.of(AlarmSeverity.UNDEFINED, AlarmStatus.CLIENT, "Unknown type"),
-                Time.now());
+                          Alarm.of(AlarmSeverity.UNDEFINED, AlarmStatus.CLIENT, "Unknown type"),
+                          Time.now());
     }
 
     /** Attempt to decode a scalar {@link VType}
@@ -78,6 +94,53 @@ public class PVAStructureHelper
         if (field instanceof PVAString)
             return Decoders.decodeString(struct, (PVAString) field);
         throw new Exception("Expected struct with scalar 'value', got " + struct);
+    }
+
+    /** Decode table from NTTable
+     *  @param struct
+     *  @return
+     *  @throws Exception
+     */
+    private static VType decodeNTTable(final PVAStructure struct) throws Exception
+    {
+        final PVAStringArray labels_array = struct.get("labels");
+        final List<String> names  = new ArrayList<>(List.of(labels_array.get()));
+
+        final List<Class<?>> types = new ArrayList<>(names.size());
+        final List<Object> values = new ArrayList<>(names.size());
+        final PVAStructure value_struct = struct.get("value");
+        for (PVAData column : value_struct.get())
+        {
+            if (column instanceof PVADoubleArray)
+            {
+                final PVADoubleArray typed = (PVADoubleArray)column;
+                types.add(Double.TYPE);
+                values.add(ArrayDouble.of(typed.get()));
+            }
+            else if (column instanceof PVAFloatArray)
+            {
+                final PVAFloatArray typed = (PVAFloatArray)column;
+                types.add(Float.TYPE);
+                values.add(ArrayFloat.of(typed.get()));
+            }
+            else if (column instanceof PVAIntArray)
+            {
+                final PVAIntArray typed = (PVAIntArray)column;
+                types.add(Integer.TYPE);
+                if (typed.isUnsigned())
+                    values.add(ArrayUInteger.of(typed.get()));
+                else
+                    values.add(ArrayInteger.of(typed.get()));
+            }
+            else if (column instanceof PVAStringArray)
+            {
+                final PVAStringArray typed = (PVAStringArray)column;
+                types.add(String.class);
+                values.add(List.of(typed.get()));
+            }
+        }
+
+        return VTable.of(types, names, values);
     }
 
     /** Decode 'value', 'timeStamp', 'alarm' of NTArray
@@ -105,26 +168,5 @@ public class PVAStructureHelper
         return VString.of(struct.format(),
                           Alarm.of(AlarmSeverity.UNDEFINED, AlarmStatus.CLIENT, "Unknown array type"),
                           Time.now());
-    }
-
-    public static double getDoubleValue(final PVAStructure struct, String name,
-                                        final double default_value)
-    {
-        final PVANumber field = struct.get(name);
-        if (field != null)
-            return field.getNumber().doubleValue();
-        else
-            return default_value;
-    }
-
-    /** @param structure {@link PVAStructure} from which to read
-     *  @param name Name of a field in that structure
-     *  @return Array of strings
-     *  @throws Exception on error
-     */
-    public static List<String> getStrings(final PVAStructure structure, final String name)
-    {
-        final PVAStringArray choices = structure.get(name);
-        return List.of(choices.get());
     }
 }

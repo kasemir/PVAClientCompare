@@ -89,6 +89,21 @@ public class Decoders
     private static final Map<String, NumberFormat> formatterCache =
             new ConcurrentHashMap<>();
 
+    /** @param struct Structure
+     *  @param name Name of Number field
+     *  @param default_value Default number if field doesn't exist
+     *  @return Double value
+     */
+    private static double getDoubleValue(final PVAStructure struct, final String name,
+                                        final double default_value)
+    {
+        final PVANumber field = struct.get(name);
+        if (field != null)
+            return field.getNumber().doubleValue();
+        else
+            return default_value;
+    }
+
     static Alarm decodeAlarm(final PVAStructure struct)
     {
         // Decode alarm_t alarm
@@ -263,8 +278,8 @@ public class Decoders
                     : createNumberFormat(str.get());
             }
 
-            display = Range.of(PVAStructureHelper.getDoubleValue(section, "limitLow", Double.NaN),
-                               PVAStructureHelper.getDoubleValue(section, "limitHigh", Double.NaN));
+            display = Range.of(getDoubleValue(section, "limitLow", Double.NaN),
+                               getDoubleValue(section, "limitHigh", Double.NaN));
         }
         else
         {
@@ -276,8 +291,8 @@ public class Decoders
         // Decode control_t control
         section = struct.get("control");
         if (section != null)
-            control = Range.of(PVAStructureHelper.getDoubleValue(section, "limitLow", Double.NaN),
-                               PVAStructureHelper.getDoubleValue(section, "limitHigh", Double.NaN));
+            control = Range.of(getDoubleValue(section, "limitLow", Double.NaN),
+                               getDoubleValue(section, "limitHigh", Double.NaN));
         else
             control = Range.undefined();
 
@@ -285,10 +300,10 @@ public class Decoders
         section = struct.get("valueAlarm");
         if (section != null)
         {
-            alarm = Range.of(PVAStructureHelper.getDoubleValue(section, "lowAlarmLimit", Double.NaN),
-                             PVAStructureHelper.getDoubleValue(section, "highAlarmLimit", Double.NaN));
-            warn = Range.of(PVAStructureHelper.getDoubleValue(section, "lowWarningLimit", Double.NaN),
-                            PVAStructureHelper.getDoubleValue(section, "highWarningLimit", Double.NaN));
+            alarm = Range.of(getDoubleValue(section, "lowAlarmLimit", Double.NaN),
+                             getDoubleValue(section, "highAlarmLimit", Double.NaN));
+            warn = Range.of(getDoubleValue(section, "lowWarningLimit", Double.NaN),
+                            getDoubleValue(section, "highWarningLimit", Double.NaN));
         }
         else
             alarm = warn = Range.undefined();
@@ -308,9 +323,10 @@ public class Decoders
 
         final PVAStructure section = struct.get("value");
         final int value = ((PVAInt)section.get("index")).get();
-        final List<String> labels = PVAStructureHelper.getStrings(section, "choices");
 
-        return VEnum.of(value, EnumDisplay.of(labels), alarm, time);
+        final PVAStringArray choices = struct.get("choices");
+
+        return VEnum.of(value, EnumDisplay.of(choices.get()), alarm, time);
     }
 
     public static VType decodeDouble(final PVAStructure struct, final PVADouble field)
