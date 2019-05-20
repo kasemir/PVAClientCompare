@@ -27,20 +27,16 @@ import org.phoebus.pv.PV;
 public class PVA_PV extends PV
 {
     private final ClientChannel channel;
-    private final String read_request, write_request;
+    final PVNameHelper name_helper;
 
     public PVA_PV(final String name, final String base_name) throws Exception
     {
         super(name);
 
         // Analyze base_name, determine channel and request
-        final PVNameHelper request_helper = PVNameHelper.forName(base_name);
-        read_request = request_helper.getReadRequest();
-        write_request = request_helper.getWriteRequest();
-        logger.log(Level.FINE, () -> "PVA '" + base_name + "' -> Channel '" +
-                                     request_helper.getChannel() + "', read " +
-                                     read_request + ", write " + write_request);
-        channel = PVA_Context.getInstance().getClient().getChannel(request_helper.getChannel(), this::channelStateChanged);
+        name_helper = PVNameHelper.forName(base_name);
+        logger.log(Level.FINE, () -> "PVA '" + base_name + "' -> " + name_helper);
+        channel = PVA_Context.getInstance().getClient().getChannel(name_helper.getChannel(), this::channelStateChanged);
     }
 
     private void channelStateChanged(final ClientChannel channel, final ClientChannelState state)
@@ -49,7 +45,7 @@ public class PVA_PV extends PV
         {   // When connected, subscribe to updates
             try
             {
-                channel.subscribe(read_request, this::handleMonitor);
+                channel.subscribe(name_helper.getReadRequest(), this::handleMonitor);
             }
             catch (Exception ex)
             {
@@ -69,7 +65,7 @@ public class PVA_PV extends PV
     {
         try
         {
-            final VType value = PVAStructureHelper.getVType(data);
+            final VType value = PVAStructureHelper.getVType(data, name_helper);
             notifyListenersOfValue(value);
         }
         catch (Exception ex)
@@ -81,7 +77,7 @@ public class PVA_PV extends PV
     @Override
     public Future<VType> asyncRead() throws Exception
     {
-        final Future<PVAStructure> data = channel.read(read_request);
+        final Future<PVAStructure> data = channel.read(name_helper.getReadRequest());
         // Wrap into Future that converts PVAStructure into VType
         return new Future<>()
         {
@@ -108,7 +104,7 @@ public class PVA_PV extends PV
             {
                 try
                 {
-                    return PVAStructureHelper.getVType(data.get());
+                    return PVAStructureHelper.getVType(data.get(), name_helper);
                 }
                 catch (InterruptedException ex)
                 {
@@ -126,7 +122,7 @@ public class PVA_PV extends PV
             {
                 try
                 {
-                    return PVAStructureHelper.getVType(data.get(timeout, unit));
+                    return PVAStructureHelper.getVType(data.get(timeout, unit), name_helper);
                 }
                 catch (InterruptedException ex)
                 {
@@ -147,13 +143,13 @@ public class PVA_PV extends PV
     @Override
     public void write(final Object new_value) throws Exception
     {
-        channel.write(write_request, new_value);
+        channel.write(name_helper.getWriteRequest(), new_value);
     }
 
     @Override
     public Future<?> asyncWrite(final Object new_value) throws Exception
     {
-        return channel.write(write_request, new_value);
+        return channel.write(name_helper.getWriteRequest(), new_value);
     }
 
     @Override

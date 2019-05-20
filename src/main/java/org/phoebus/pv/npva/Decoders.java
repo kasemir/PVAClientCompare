@@ -16,13 +16,31 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.epics.pva.data.PVAByte;
+import org.epics.pva.data.PVAByteArray;
 import org.epics.pva.data.PVADouble;
+import org.epics.pva.data.PVADoubleArray;
 import org.epics.pva.data.PVAFloat;
+import org.epics.pva.data.PVAFloatArray;
 import org.epics.pva.data.PVAInt;
+import org.epics.pva.data.PVAIntArray;
 import org.epics.pva.data.PVALong;
+import org.epics.pva.data.PVALongArray;
+import org.epics.pva.data.PVANumber;
 import org.epics.pva.data.PVAShort;
+import org.epics.pva.data.PVAShortArray;
 import org.epics.pva.data.PVAString;
+import org.epics.pva.data.PVAStringArray;
 import org.epics.pva.data.PVAStructure;
+import org.epics.util.array.ArrayByte;
+import org.epics.util.array.ArrayDouble;
+import org.epics.util.array.ArrayFloat;
+import org.epics.util.array.ArrayInteger;
+import org.epics.util.array.ArrayLong;
+import org.epics.util.array.ArrayShort;
+import org.epics.util.array.ArrayUByte;
+import org.epics.util.array.ArrayUInteger;
+import org.epics.util.array.ArrayULong;
+import org.epics.util.array.ArrayUShort;
 import org.epics.util.stats.Range;
 import org.epics.util.text.NumberFormats;
 import org.epics.vtype.Alarm;
@@ -32,18 +50,29 @@ import org.epics.vtype.Display;
 import org.epics.vtype.EnumDisplay;
 import org.epics.vtype.Time;
 import org.epics.vtype.VByte;
+import org.epics.vtype.VByteArray;
 import org.epics.vtype.VDouble;
+import org.epics.vtype.VDoubleArray;
 import org.epics.vtype.VEnum;
 import org.epics.vtype.VFloat;
+import org.epics.vtype.VFloatArray;
 import org.epics.vtype.VInt;
+import org.epics.vtype.VIntArray;
 import org.epics.vtype.VLong;
+import org.epics.vtype.VLongArray;
 import org.epics.vtype.VShort;
+import org.epics.vtype.VShortArray;
 import org.epics.vtype.VString;
+import org.epics.vtype.VStringArray;
 import org.epics.vtype.VType;
 import org.epics.vtype.VUByte;
+import org.epics.vtype.VUByteArray;
 import org.epics.vtype.VUInt;
+import org.epics.vtype.VUIntArray;
 import org.epics.vtype.VULong;
+import org.epics.vtype.VULongArray;
 import org.epics.vtype.VUShort;
+import org.epics.vtype.VUShortArray;
 
 /** Decodes {@link Time}, {@link Alarm}, {@link Display}, ...
  *  @author Kay Kasemir
@@ -60,7 +89,7 @@ public class Decoders
     private static final Map<String, NumberFormat> formatterCache =
             new ConcurrentHashMap<>();
 
-    private static Alarm decodeAlarm(final PVAStructure struct)
+    static Alarm decodeAlarm(final PVAStructure struct)
     {
         // Decode alarm_t alarm
         final AlarmSeverity severity;
@@ -92,7 +121,7 @@ public class Decoders
         return Alarm.of(severity, status, message);
     }
 
-    private static Time decodeTime(final PVAStructure struct)
+    static Time decodeTime(final PVAStructure struct)
     {
         // Decode time_t timeStamp
         final Instant timestamp;
@@ -320,5 +349,79 @@ public class Decoders
         if (field.isUnsigned())
             return VUByte.of(field.get(), decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
         return VByte.of(field.get(), decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+    }
+
+    public static VType decodeDoubleArray(final PVAStructure struct, final PVADoubleArray field)
+    {
+        return VDoubleArray.of(ArrayDouble.of(field.get()),
+                               decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+    }
+
+    public static VType decodeFloatArray(final PVAStructure struct, final PVAFloatArray field)
+    {
+        return VFloatArray.of(ArrayFloat.of(field.get()),
+                              decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+    }
+
+    public static VType decodeLongArray(final PVAStructure struct, final PVALongArray field)
+    {
+        if (field.isUnsigned())
+            return VULongArray.of(ArrayULong.of(field.get()),
+                                  decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+        else
+            return VLongArray.of(ArrayLong.of(field.get()),
+                                 decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+    }
+
+    public static VType decodeIntArray(final PVAStructure struct, final PVAIntArray field)
+    {
+        if (field.isUnsigned())
+            return VUIntArray.of(ArrayUInteger.of(field.get()),
+                                 decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+        else
+            return VIntArray.of(ArrayInteger.of(field.get()),
+                                decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+    }
+
+    public static VType decodeShortArray(final PVAStructure struct, final PVAShortArray field)
+    {
+        if (field.isUnsigned())
+            return VUShortArray.of(ArrayUShort.of(field.get()),
+                                   decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+        else
+            return VShortArray.of(ArrayShort.of(field.get()),
+                                  decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+    }
+
+    public static VType decodeByteArray(final PVAStructure struct, final PVAByteArray field)
+    {
+        if (field.isUnsigned())
+            return VUByteArray.of(ArrayUByte.of(field.get()),
+                                  decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+        else
+            return VByteArray.of(ArrayByte.of(field.get()),
+                                 decodeAlarm(struct), decodeTime(struct), decodeDisplay(struct));
+    }
+
+    public static VType decodeStringArray(final PVAStructure struct, final PVAStringArray field)
+    {
+        return VStringArray.of(List.of(field.get()), decodeAlarm(struct), decodeTime(struct));
+    }
+
+    public static VType decodeNumber(final PVAStructure struct, final PVANumber field) throws Exception
+    {
+        if (field instanceof PVADouble)
+            return Decoders.decodeDouble(struct, (PVADouble) field);
+        if (field instanceof PVAFloat)
+            return Decoders.decodeFloat(struct, (PVAFloat) field);
+        if (field instanceof PVALong)
+            return Decoders.decodeLong(struct, (PVALong) field);
+        if (field instanceof PVAInt)
+            return Decoders.decodeInt(struct, (PVAInt) field);
+        if (field instanceof PVAShort)
+            return Decoders.decodeShort(struct, (PVAShort) field);
+        if (field instanceof PVAByte)
+            return Decoders.decodeByte(struct, (PVAByte) field);
+        throw new Exception("Cannot handle " + field.getClass().getName());
     }
 }
