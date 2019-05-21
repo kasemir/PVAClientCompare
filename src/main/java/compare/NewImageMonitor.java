@@ -9,7 +9,7 @@ package compare;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.epics.pva.client.ClientChannel;
+import org.epics.pva.client.PVAChannel;
 import org.epics.pva.client.ClientChannelListener;
 import org.epics.pva.client.ClientChannelState;
 import org.epics.pva.client.PVAClient;
@@ -36,7 +36,7 @@ public class NewImageMonitor
                 if (state == ClientChannelState.CONNECTED)
                     connected.countDown();
             };
-            final ClientChannel channel = client.getChannel("IMAGE", listener);
+            final PVAChannel channel = client.getChannel("IMAGE", listener);
             connected.await();
 
             channel.subscribe("", (ch, changes, data) ->

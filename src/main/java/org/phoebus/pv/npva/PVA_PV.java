@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
-import org.epics.pva.client.ClientChannel;
+import org.epics.pva.client.PVAChannel;
 import org.epics.pva.client.ClientChannelState;
 import org.epics.pva.data.PVAStructure;
 import org.epics.vtype.VType;
@@ -26,7 +26,7 @@ import org.phoebus.pv.PV;
 @SuppressWarnings("nls")
 public class PVA_PV extends PV
 {
-    private final ClientChannel channel;
+    private final PVAChannel channel;
     final PVNameHelper name_helper;
 
     public PVA_PV(final String name, final String base_name) throws Exception
@@ -39,7 +39,7 @@ public class PVA_PV extends PV
         channel = PVA_Context.getInstance().getClient().getChannel(name_helper.getChannel(), this::channelStateChanged);
     }
 
-    private void channelStateChanged(final ClientChannel channel, final ClientChannelState state)
+    private void channelStateChanged(final PVAChannel channel, final ClientChannelState state)
     {
         if (state == ClientChannelState.CONNECTED)
         {   // When connected, subscribe to updates
@@ -59,7 +59,7 @@ public class PVA_PV extends PV
         }
     }
 
-    private void handleMonitor(final ClientChannel channel,
+    private void handleMonitor(final PVAChannel channel,
                                final BitSet changes,
                                final PVAStructure data)
     {

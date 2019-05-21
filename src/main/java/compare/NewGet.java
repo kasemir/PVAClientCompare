@@ -10,7 +10,7 @@ package compare;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.epics.pva.client.ClientChannel;
+import org.epics.pva.client.PVAChannel;
 import org.epics.pva.client.ClientChannelListener;
 import org.epics.pva.client.ClientChannelState;
 import org.epics.pva.client.PVAClient;
@@ -37,9 +37,9 @@ public class NewGet
                     if (state == ClientChannelState.CONNECTED)
                         connected.countDown();
                 };
-                ClientChannel ramp = client.getChannel("ramp", listener);
-                ClientChannel saw = client.getChannel("saw", listener);
-                ClientChannel rnd = client.getChannel("rnd", listener);
+                PVAChannel ramp = client.getChannel("ramp", listener);
+                PVAChannel saw = client.getChannel("saw", listener);
+                PVAChannel rnd = client.getChannel("rnd", listener);
                 connected.await();
                 final String val1 = ramp.read("").get().get("value").toString();
                 final String val2 = saw.read("").get().get("value").toString();
