@@ -8,6 +8,7 @@
 package compare;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.epics.pva.client.ClientChannelListener;
@@ -23,12 +24,10 @@ public class NewGet
 {
     static
     {
-        // TODO While running, stop the IOC and then restart
-        //      ==> See what happens when disconnected while 1 channel was resolved,
-        //          others still incomplete
         try
         {
-            // LogManager.getLogManager().readConfiguration(PVASettings.class.getResourceAsStream("/logging.properties"));
+            // Verbose output
+//            LogManager.getLogManager().readConfiguration(PVASettings.class.getResourceAsStream("/logging.properties"));
         }
         catch (Exception ex)
         {
@@ -47,28 +46,35 @@ public class NewGet
             while (true)
             {
                 final CountDownLatch connected = new CountDownLatch(3);
-                ClientChannelListener listener = (channel, state) ->
+                final ClientChannelListener listener = (channel, state) ->
                 {
                     if (state == ClientChannelState.CONNECTED)
                         connected.countDown();
                 };
-                PVAChannel ramp = client.getChannel("ramp", listener);
-                PVAChannel saw = client.getChannel("saw", listener);
-                PVAChannel rnd = client.getChannel("rnd", listener);
+                final PVAChannel ramp = client.getChannel("ramp", listener);
+                final PVAChannel saw = client.getChannel("saw", listener);
+                final PVAChannel rnd = client.getChannel("rnd", listener);
                 connected.await();
-                final String val1 = ramp.read("").get().get("value").toString();
-                final String val2 = saw.read("").get().get("value").toString();
-                final String val3 = rnd.read("").get().get("value").toString();
-                if (print)
-                {
-                    System.out.println("ramp = " + val1);
-                    System.out.println("saw = " + val2);
-                    System.out.println("rnd = " + val3);
+                try
+                {   // Once connected, allow 'get' to fail when IOC is shut down, ..
+                    final String val1 = ramp.read("").get(2, TimeUnit.SECONDS).get("value").toString();
+                    final String val2 = saw.read("").get(2, TimeUnit.SECONDS).get("value").toString();
+                    final String val3 = rnd.read("").get(2, TimeUnit.SECONDS).get("value").toString();
+                    if (print)
+                    {
+                        System.out.println("ramp = " + val1);
+                        System.out.println("saw = " + val2);
+                        System.out.println("rnd = " + val3);
+                    }
+                    new_updates.incrementAndGet();
+                }
+                catch (Exception ex)
+                {   // log error, and try again
+                    ex.printStackTrace();
                 }
                 rnd.close();
                 saw.close();
                 ramp.close();
-                new_updates.incrementAndGet();
             }
         }
         catch (Exception ex)
