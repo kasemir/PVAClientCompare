@@ -8,10 +8,9 @@
 package compare;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.epics.pva.client.PVAChannel;
-import org.epics.pva.client.ClientChannelListener;
-import org.epics.pva.client.ClientChannelState;
 import org.epics.pva.client.PVAClient;
 import org.epics.pva.data.PVAShortArray;
 import org.epics.pva.data.PVAUnion;
@@ -30,15 +29,8 @@ public class NewImageMonitor
         try
         {
             PVAClient client = new PVAClient();
-            final CountDownLatch connected = new CountDownLatch(1);
-            ClientChannelListener listener = (channel, state) ->
-            {
-                if (state == ClientChannelState.CONNECTED)
-                    connected.countDown();
-            };
-            final PVAChannel channel = client.getChannel("IMAGE", listener);
-            connected.await();
-
+            final PVAChannel channel = client.getChannel("IMAGE");
+            channel.awaitConnection(5, TimeUnit.SECONDS);
             channel.subscribe("", (ch, changes, data) ->
             {
                 final PVAUnion value = data.get("value");
