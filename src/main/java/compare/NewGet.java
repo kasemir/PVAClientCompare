@@ -10,9 +10,9 @@ package compare;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.epics.pva.client.PVAChannel;
 import org.epics.pva.client.ClientChannelListener;
 import org.epics.pva.client.ClientChannelState;
+import org.epics.pva.client.PVAChannel;
 import org.epics.pva.client.PVAClient;
 
 /** PVA 'get'
@@ -21,6 +21,21 @@ import org.epics.pva.client.PVAClient;
 @SuppressWarnings("nls")
 public class NewGet
 {
+    static
+    {
+        // TODO While running, stop the IOC and then restart
+        //      ==> See what happens when disconnected while 1 channel was resolved,
+        //          others still incomplete
+        try
+        {
+            // LogManager.getLogManager().readConfiguration(PVASettings.class.getResourceAsStream("/logging.properties"));
+        }
+        catch (Exception ex)
+        {
+            ex.printStackTrace();
+        }
+    }
+
     private static AtomicInteger new_updates = new AtomicInteger();
     private static boolean print = false;
 
