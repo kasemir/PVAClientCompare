@@ -7,12 +7,11 @@
  ******************************************************************************/
 package compare;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.epics.pva.client.ClientChannelListener;
-import org.epics.pva.client.ClientChannelState;
 import org.epics.pva.client.PVAChannel;
 import org.epics.pva.client.PVAClient;
 
@@ -45,16 +44,12 @@ public class NewGet
             PVAClient client = new PVAClient();
             while (true)
             {
-                final CountDownLatch connected = new CountDownLatch(3);
-                final ClientChannelListener listener = (channel, state) ->
-                {
-                    if (state == ClientChannelState.CONNECTED)
-                        connected.countDown();
-                };
+                final ClientChannelListener listener = (channel, state) -> {};
                 final PVAChannel ramp = client.getChannel("ramp", listener);
                 final PVAChannel saw = client.getChannel("saw", listener);
                 final PVAChannel rnd = client.getChannel("rnd", listener);
-                connected.await();
+                CompletableFuture.allOf(ramp.connect(), saw.connect(), rnd.connect()).get();
+                                
                 try
                 {   // Once connected, allow 'get' to fail when IOC is shut down, ..
                     final String val1 = ramp.read("").get(2, TimeUnit.SECONDS).get("value").toString();

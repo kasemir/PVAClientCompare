@@ -30,7 +30,7 @@ public class NewImageMonitor
         {
             PVAClient client = new PVAClient();
             final PVAChannel channel = client.getChannel("IMAGE");
-            channel.awaitConnection(5, TimeUnit.SECONDS);
+            channel.connect().get(5, TimeUnit.SECONDS);
             channel.subscribe("", (ch, changes, data) ->
             {
                 final PVAUnion value = data.get("value");
