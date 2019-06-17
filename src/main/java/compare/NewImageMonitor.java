@@ -31,7 +31,7 @@ public class NewImageMonitor
             PVAClient client = new PVAClient();
             final PVAChannel channel = client.getChannel("IMAGE");
             channel.connect().get(5, TimeUnit.SECONDS);
-            channel.subscribe("", (ch, changes, data) ->
+            channel.subscribe("", (ch, changes, overruns, data) ->
             {
                 final PVAUnion value = data.get("value");
                 final PVAShortArray array = value.get();
