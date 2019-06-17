@@ -14,8 +14,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
-import org.epics.pva.client.PVAChannel;
 import org.epics.pva.client.ClientChannelState;
+import org.epics.pva.client.PVAChannel;
 import org.epics.pva.data.PVAStructure;
 import org.epics.vtype.VType;
 import org.phoebus.pv.PV;
@@ -61,6 +61,7 @@ public class PVA_PV extends PV
 
     private void handleMonitor(final PVAChannel channel,
                                final BitSet changes,
+                               final BitSet overruns,
                                final PVAStructure data)
     {
         try
